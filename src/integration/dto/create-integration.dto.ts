@@ -1,16 +1,16 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class CreateIntegrationDto {
 
     @IsString()
-    @IsNotEmpty()
+    @IsOptional()
     omBotToken: string;
 
     @IsString()
-    @IsNotEmpty()
+    @IsOptional()
     slackTeamId: string;
 
     @IsString()
-    @IsNotEmpty()
+    @IsOptional()
     slackBotToken: string;
 }

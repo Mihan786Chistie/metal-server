@@ -1,31 +1,54 @@
 import { User } from 'src/user/entities/user.entity';
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  OneToOne,
-  PrimaryGeneratedColumn,
+    BeforeInsert,
+    BeforeUpdate,
+    Column,
+    CreateDateColumn,
+    Entity,
+    JoinColumn,
+    OneToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
+import { encrypt } from '../util/crypt';
+
+function isEncrypted(value: string): boolean {
+    return value.includes(':') && value.split(':').length === 2;
+}
 
 @Entity()
 export class Integration {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
-  @Column()
-  omBotToken: string;
+    @Column({ nullable: true })
+    omBotToken: string;
 
-  @Column()
-  slackTeamId: string;
+    @Column({ nullable: true })
+    slackTeamId: string;
 
-  @Column()
-  slackBotToken: string;
+    @Column({ nullable: true })
+    slackBotToken: string;
 
-  @CreateDateColumn()
-  createdAt: Date;
+    @CreateDateColumn()
+    createdAt: Date;
 
-  @OneToOne(() => User, (user) => user.integration, { cascade: true })
-  @JoinColumn({ name: 'userId' })
-  user: User;
+    @UpdateDateColumn()
+    updatedAt: Date;
+
+    @OneToOne(() => User, (user) => user.integration, { cascade: false })
+    @JoinColumn({ name: 'userId' })
+    user: User;
+
+    @BeforeInsert()
+    @BeforeUpdate()
+    encryptTokens() {
+        if (this.slackBotToken && !isEncrypted(this.slackBotToken)) {
+            this.slackBotToken = encrypt(this.slackBotToken);
+        }
+
+        if (this.omBotToken && !isEncrypted(this.omBotToken)) {
+            this.omBotToken = encrypt(this.omBotToken);
+        }
+    }
 }
