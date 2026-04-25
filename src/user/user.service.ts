@@ -28,10 +28,11 @@ export class UserService {
   }
 
   async findOne(id: string) {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new Error(`User with ID ${id} not found`);
-    }
-    return user;
+    return await this.userRepository.findOne({
+      where: {
+        id,
+      },
+      select: ['name', 'email'],
+    });
   }
 }
