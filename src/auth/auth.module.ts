@@ -11,6 +11,8 @@ import { ConfigModule } from '@nestjs/config';
 import { JWTStrategy } from './strategies/jwt.strategy';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { RefreshJWTStrategy } from './strategies/refresh.strategy';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -18,7 +20,6 @@ import { RefreshJWTStrategy } from './strategies/refresh.strategy';
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(refreshJwtConfig),
-
   ],
   controllers: [AuthController],
   providers: [
@@ -26,7 +27,11 @@ import { RefreshJWTStrategy } from './strategies/refresh.strategy';
     UserService,
     LocalStrategy,
     JWTStrategy,
-    RefreshJWTStrategy
+    RefreshJWTStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
   ],
 })
 export class AuthModule { }
