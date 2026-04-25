@@ -13,7 +13,7 @@ export class UserService {
     const existing = await this.findByEmail(createUserDto.email);
     if (existing) throw new BadRequestException('Email already exists');
 
-    const user = this.userRepository.create(createUserDto);
+    const user = await this.userRepository.create(createUserDto);
     return await this.userRepository.save(user);
   }
 
@@ -27,11 +27,26 @@ export class UserService {
     return user;
   }
 
-  async findOne(id: string) {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new Error(`User with ID ${id} not found`);
-    }
-    return user;
+  async updateHashedRefreshToken(userId: string, hashedRefreshToken: any) {
+    return await this.userRepository.update(
+      { id: userId },
+      { hashedRefreshToken },
+    );
+  }
+
+  async findOneWithToken(id: string) {
+    return await this.userRepository.findOne({
+      where: {
+        id,
+      },
+      select: ['id', 'name', 'hashedRefreshToken'],
+    });
+  }
+
+  async getPublicProfile(id: string) {
+    return await this.userRepository.findOne({
+      where: { id },
+      select: ['id', 'name', 'email'],
+    });
   }
 }
