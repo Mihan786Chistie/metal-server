@@ -115,6 +115,18 @@ export class IntegrationService {
 
   }
 
+  async findOneDecryptedById(integrationId: string) {
+    const integration = await this.integrationRepository.findOne({
+      where: { id: integrationId },
+    });
+    if (!integration) return null;
+    return {
+      id: integration.id,
+      slackTeamId: integration.slackTeamId,
+      omBotToken: integration.omBotToken ? decrypt(integration.omBotToken) : null,
+      slackBotToken: integration.slackBotToken ? decrypt(integration.slackBotToken) : null,
+    };
+  }
 
   async upsert(userId: string, data: Partial<Integration>) {
     const integration = await this.integrationRepository.findOne({

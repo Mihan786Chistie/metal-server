@@ -8,7 +8,9 @@ import {
   Delete,
   Req,
   Query,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { IntegrationService } from './integration.service';
 import { UpdateIntegrationDto } from './dto/update-integration.dto';
 import { Public } from 'src/auth/decorators/public.decorator';
@@ -16,6 +18,11 @@ import { Public } from 'src/auth/decorators/public.decorator';
 @Controller('integration')
 export class IntegrationController {
   constructor(private readonly integrationService: IntegrationService) { }
+
+  @Get()
+  findUserIntegration(@Req() req) {
+    return this.integrationService.findOneDecryptedByUserId(req.user.id);
+  }
 
   @Get(':id')
   findOne(@Req() req, @Param('id') id: string) {
@@ -42,8 +49,9 @@ export class IntegrationController {
 
   @Public()
   @Get('/slack/callback')
-  slackCallback(@Query('code') code: string, @Req() req) {
-    return this.integrationService.slackCallback(code, req.user.id);
+  async slackCallback(@Query('code') code: string, @Query('state') state: string, @Res() res: Response) {
+    await this.integrationService.slackCallback(code, state);
+    return res.redirect('http://localhost:3001/dashboard/integrations');
   }
 
   @Post('/open-metadata')
