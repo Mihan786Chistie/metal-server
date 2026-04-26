@@ -7,6 +7,8 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { IntegrationModule } from './integration/integration.module';
 import { AlertsModule } from './alerts/alerts.module';
+import { WebhookModule } from './webhook/webhook.module';
+import { SlackModule } from './slack/slack.module';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { AlertsModule } from './alerts/alerts.module';
     AuthModule,
     IntegrationModule,
     AlertsModule,
+    WebhookModule,
+    SlackModule,
   ],
   controllers: [AppController],
   providers: [AppService],

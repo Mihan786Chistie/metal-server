@@ -48,26 +48,29 @@ export class AlertsService {
       updatedAt: new Date(matchingAlert.updatedAt),
       updatedBy: matchingAlert.updatedBy,
       alertType: matchingAlert.alertType,
-      enabled: matchingAlert.enabled,
       integrationId: integration.id,
       recipientType: createAlertDto.recipientType as RecipientType
     });
 
-    const newDestination =
-      [
-        {
-          "op": "replace",
-          "path": "/destinations",
-          "value": [
-            {
-              "type": "Webhook",
-              "config": {
-                "endpoint": this.configService.getOrThrow('METAL_API_URL') + '/webhook'
-              }
+    const newDestination = [
+      {
+        "op": "replace",
+        "path": "/destinations",
+        "value": [
+          {
+            "type": "Webhook",
+            "config": {
+              "endpoint": this.configService.getOrThrow('METAL_API_URL') + '/webhook/' + id
             }
-          ]
-        }
-      ]
+          }
+        ]
+      },
+      {
+        "op": "replace",
+        "path": "/enabled",
+        "value": true
+      }
+    ]
 
     const alertUpdateResponse = await fetch(`${this.configService.getOrThrow('OM_API_URL')}/events/subscriptions/${id}`, {
       method: 'PATCH',
@@ -85,6 +88,76 @@ export class AlertsService {
     return await this.alertRepository.save(alert);
   }
 
+  async findAllFromOM(userId: string) {
+    const integration = await this.integrationService.findOneDecryptedByUserId(userId);
+    if (!integration || !integration.omBotToken) {
+      throw new BadRequestException('OpenMetadata integration not configured');
+    }
+
+    const response = await fetch(`${this.configService.getOrThrow('OM_API_URL')}/events/subscriptions`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${integration.omBotToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new BadRequestException('OpenMetadata alert fetch failed');
+    }
+
+    const omData = await response.json();
+
+    // Fetch local alerts to check if they are saved in our DB
+    const localAlerts = await this.alertRepository.find({
+      where: { integrationId: integration.id }
+    });
+    // Map local alerts for easy lookup of their enabled status
+    const localAlertMap = new Map(localAlerts.map(a => [a.id, a.enabled]));
+
+    return omData.data.map((alert: any) => ({
+      id: alert.id,
+      name: alert.displayName || alert.name,
+      alertType: alert.alertType,
+      // Use local DB enabled status if saved, otherwise default to false
+      enabled: localAlertMap.get(alert.id) ?? false,
+      destinations: alert.destinations,
+      href: alert.href,
+    }));
+  }
+
+  async disable(userId: string, id: string) {
+    const integration = await this.integrationService.findOneDecryptedByUserId(userId);
+
+    const patchPayload = [
+      {
+        "op": "replace",
+        "path": "/enabled",
+        "value": false
+      }
+    ];
+
+    const response = await fetch(`${this.configService.getOrThrow('OM_API_URL')}/events/subscriptions/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${integration.omBotToken}`,
+        'Content-Type': 'application/json-patch+json',
+      },
+      body: JSON.stringify(patchPayload),
+    });
+
+    if (!response.ok) {
+      throw new BadRequestException('Failed to disable alert in OpenMetadata');
+    }
+
+    const alert = await this.alertRepository.findOne({ where: { id } });
+    if (alert) {
+      alert.enabled = false;
+      await this.alertRepository.save(alert);
+    }
+
+    return { success: true };
+  }
+
   async findOne(id: string) {
 
     return await this.alertRepository.findOne({
@@ -93,5 +166,4 @@ export class AlertsService {
       }
     });
   }
-
 }
