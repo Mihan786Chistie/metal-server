@@ -55,20 +55,8 @@ export class AlertsService {
     const newDestination = [
       {
         "op": "replace",
-        "path": "/destinations",
-        "value": [
-          {
-            "type": "Webhook",
-            "config": {
-              "endpoint": this.configService.getOrThrow('METAL_API_URL') + '/webhook/' + id
-            }
-          }
-        ]
-      },
-      {
-        "op": "replace",
-        "path": "/enabled",
-        "value": true
+        "path": "/destinations/0/config/endpoint",
+        "value": this.configService.getOrThrow('METAL_API_URL') + '/webhook/' + id
       }
     ]
 
