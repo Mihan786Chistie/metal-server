@@ -49,6 +49,24 @@ export class IntegrationService {
     };
   }
 
+  async findOneDecryptedByUserId(userId: string) {
+    const integration = await this.integrationRepository.findOne({
+      where: {
+        user: {
+          id: userId,
+        },
+      },
+    });
+    if (!integration)
+      throw new NotFoundException(`Integration not found`);
+    return {
+      id: integration.id,
+      slackTeamId: integration.slackTeamId,
+      omBotToken: integration.omBotToken ? decrypt(integration.omBotToken) : null,
+      slackBotToken: integration.slackBotToken ? decrypt(integration.slackBotToken) : null,
+    };
+  }
+
   async update(
     userId: string,
     id: string,
